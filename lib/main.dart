@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 void main() => runApp(new stockios());
 
@@ -11,11 +12,11 @@ class stockios extends StatelessWidget {
 
   Widget build(BuildContext context) {
     return new MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Stockio',
       theme: new ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: new MyHomePage(title: 'Flutter Demo Home Page'),
+      home: new MyHomePage(title: 'Stockio'),
     );
   }
 }
@@ -31,118 +32,182 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  bool _dataloaded = false;
   String new_ticker;
   double new_buy;
-  var ticker;
-  var buying;
-  var current = [150.92, 230.74, 24.50, 151.10];
-  var change_dollar = [];
-  var change_percent = [];
+  List<String>ticker = ['TSLA', 'AAPL', 'MSFT', 'NVDA'];
+  List<String>buying = ['100.12', '250.76', '25.67', '150.00'];
+  List<double>current = [103.00, 260.13, 34.34, 151.45];
+
+  List<double>change_dollar = [];
+  List<double>change_percent = [];
+
   double total_buying = 0.0;
   double total_dollar = 0.0;
   double total_percent = 0.0;
-  var _tickermemory = [];
-  var _buymemory = [];
-  SharedPreferences prefs;
 
-  void _loadSettings() async{
-//      SharedPreferences.setMockInitialValues({});
-    prefs = await SharedPreferences.getInstance();
-    print(prefs.getStringList('tickers'));
-    if (prefs.getStringList('tickers') == null) {
-      print('Loaded default values.');
-      prefs.setStringList('tickers', ['GOOGL', 'APPL', 'MSFT', 'NVDA']);
-      prefs.setStringList('buys', ['100.12', '250.76', '25.67', '150.00']);
-    };
+  List<DataRow> rows_total = [];
+  List<DataRow> rows = [];
+
+  final List<DataColumn> cols = [
+    new DataColumn(
+      label: const Text('Ticker'),
+    ),
+    new DataColumn(
+      label: const Text('Current'),
+    ),
+    new DataColumn(
+      label: const Text('Dollar'),
+    ),
+  ];
+
+  final List<DataColumn> cols_total = [
+    new DataColumn(
+      label: const Text('Total Dollar'),
+    ),
+    new DataColumn(
+      label: const Text('Total Percent'),
+    ),
+  ];
+
+  _getweb(get_ticker) async {
+    String temp_price;
+    List<double>temp_prices = [];
+    print('Getting webdata.');
+    print('https://www.nasdaq.com/symbol/$get_ticker');
+    var contents = await http.read('https://www.nasdaq.com/symbol/$get_ticker');
+    var webdata_list = contents.split('</div>');
+    print('Handling web data.');
+    print(webdata_list.length);
+    for (var i = 0; i < webdata_list.length; i++) {
+      if (webdata_list[i].contains('qwidget_lastsale')) {
+        var webdata_amount = webdata_list[i].split('>');
+        temp_price = webdata_amount[2].replaceAll('\$', '');
+        print('$get_ticker : $temp_price');
+        print('Adding Ticker.');
+        temp_prices.add(double.parse(temp_price));
+      }
+    }
     setState(() {
-      print('Loading variables.');
-      ticker = prefs.getStringList('tickers');
-      buying = prefs.getStringList('buys');
+      print(temp_prices.toString());
+      current = temp_prices;
     });
   }
 
-  void _saveSettings() {
+  _rungetweb() async{
+    print(ticker.length);
+    for(int i = 0; i < ticker.length; i++) {
+      _getweb(ticker[i]);
+    }
+  }
+
+  _loadSettings() async{
+    List<String>temp_tickers = [];
+    List<String>temp_buys = [];
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs = await SharedPreferences.getInstance();
+    if (prefs.getStringList('tickers').contains('Blank')){
+      print('Loaded default values.');
+      prefs.setStringList('tickers', ['GOOGL', 'AAPL', 'MSFT', 'NVDA']);
+      prefs.setStringList('buys', ['100.12', '250.76', '25.67', '150.00']);
+    }
+    temp_tickers = prefs.getStringList('tickers');
+    temp_buys = prefs.getStringList('buys');
+    setState(() {
+      print('Loading variables.');
+      ticker = temp_tickers;
+      print(ticker);
+      buying = temp_buys;
+      print(buying);
+    });
+  }
+
+  _saveSettings(String newticker, String newbuy) async{
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      ticker.add(newticker);
+      buying.add(newbuy);
+      _getweb(newticker);
+      text_colors.add(Colors.green);
+    });
     prefs.setStringList('tickers', ticker);
     prefs.setStringList('buys', buying);
+  }
+
+  _gettotaldata() async {
+    double temp_total_buying = 0.0;
+    double temp_total_percent = 0.0;
+    double temp_total_dollar = 0.0;
+    print(buying.length);
+    for(var i = 0; i < buying.length; i++){
+      print(buying[i]);
+      temp_total_buying += double.parse(buying[i]);
+      temp_total_dollar += current[i];
+      print(temp_total_buying);
+      double dollar = current[i] - double.parse(buying[i]);
+      double percent = ((current[i] - double.parse(buying[i]))/double.parse(buying[i]))*100;
+      temp_total_percent = ((temp_total_dollar - temp_total_buying)/temp_total_buying)*100;
+      setState((){
+        change_dollar.add(dollar);
+        change_percent.add(percent);
+      });
+    }
+    setState((){
+      print('Setting total.');
+      print(temp_total_buying);
+      print(temp_total_percent);
+      print(temp_total_dollar);
+      total_buying = temp_total_buying;
+      total_percent = temp_total_percent;
+      total_dollar = temp_total_dollar;
+    });
+  }
+
+  _gettabledata() async {
+    List<DataRow> temp_rows = [];
+    List<DataRow> temp_rows_total = [];
+
+    for (var i = 0; i < current.length; i++) {
+      temp_rows.add(new DataRow(
+          cells: [
+            new DataCell(new Text(ticker[i])),
+            new DataCell(new Text(current[i].toStringAsFixed(2),
+                style: new TextStyle(color: text_colors[i]))),
+            new DataCell(new Text(change_dollar[i].toStringAsFixed(2),
+                style: new TextStyle(color: text_colors[i]))),
+            //            new DataCell(new Text(change_percent[i].toStringAsFixed(2)))
+          ]
+      ));
+    }
+    temp_rows_total.add(new DataRow(
+        cells: [
+          new DataCell(new Text(total_dollar.toStringAsFixed(2))),
+          new DataCell(new Text(total_percent.toStringAsFixed(2))),
+          //            new DataCell(new Text(change_percent[i].toStringAsFixed(2)))
+        ]
+    ));
+    setState((){
+      rows = temp_rows;
+      rows_total = temp_rows_total;
+    });
   }
 
   final List<Color> text_colors = [Colors.green, Colors.red, Colors.red, Colors.green];
 
   @override
-  Widget build(BuildContext context) {
+  void initState() {
+    print('_loadSettings');
     _loadSettings();
-    void gettotals(){
-      total_buying = 0.0;
-      total_percent = 0.0;
-      total_dollar = 0.0;
-      for(var i = 0; i < buying.length; i++){
-        total_buying += double.parse(buying[i]);
-        total_dollar += current[i];
-        print(total_buying);
-        double dollar = current[i] - double.parse(buying[i]);
-        double percent = ((current[i] - double.parse(buying[i]))/double.parse(buying[i]))*100;
-        total_percent = ((total_dollar - total_buying)/total_buying)*100;
-        setState((){
-          change_dollar.add(dollar);
-          change_percent.add(percent);
-        });
-      }
+    print('_rungetweb');
+    _rungetweb();
+    print('_loadtotaldata');
+    _gettotaldata();
+    print('_loadtabledata');
+    _gettabledata();
+  }
 
-      setState((){
-        print('Setting total.');
-        total_buying;
-        total_percent;
-        total_dollar;
-      });
-    }
-    final cols = [
-      new DataColumn(
-        label: const Text('Ticker'),
-      ),
-      new DataColumn(
-        label: const Text('Current'),
-      ),
-      new DataColumn(
-        label: const Text('Dollar'),
-      ),
-//      new DataColumn(
-//        label: const Text('Percent'),
-//      ),
-    ];
-
-    final cols_total = [
-      new DataColumn(
-        label: const Text('Total Dollar'),
-      ),
-      new DataColumn(
-        label: const Text('Total Percent'),
-      ),
-
-//      new DataColumn(
-//        label: const Text('Percent'),
-//      ),
-    ];
-
-    final List<DataRow> rows = [];
-    for(var i = 0; i < ticker.length; i++){
-      rows.add(new DataRow(
-          cells: [
-            new DataCell(new Text(ticker[i])),
-            new DataCell(new Text(current[i].toStringAsFixed(2), style: new TextStyle(color: text_colors[i]))),
-            new DataCell(new Text(change_dollar[i].toStringAsFixed(2), style: new TextStyle(color: text_colors[i]))),
-//            new DataCell(new Text(change_percent[i].toStringAsFixed(2)))
-          ]
-      ));
-    }
-
-    final List<DataRow> rows_total = [];
-    rows_total.add(new DataRow(
-        cells: [
-          new DataCell(new Text(total_dollar.toStringAsFixed(2))),
-          new DataCell(new Text(total_percent.toStringAsFixed(2))),
-//            new DataCell(new Text(change_percent[i].toStringAsFixed(2)))
-        ]
-    ));
+  @override
+  Widget build(BuildContext context) {
 
     final main_card = Card(
         margin: EdgeInsets.all(4.0),
@@ -180,8 +245,6 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
     );
 
-    gettotals();
-
     return Scaffold(
       appBar: appBar,
       floatingActionButton: FloatingActionButton(
@@ -204,7 +267,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   decoration: new InputDecoration(
                       labelText: "Buy Price"
                   ),
-                  onChanged: ( text) {
+                  onChanged: (String text) {
                     new_buy = double.parse(text);
                   },
                 ),
@@ -218,16 +281,9 @@ class _MyHomePageState extends State<MyHomePage> {
                   child: new Text("Add"),
                   onPressed: () {
                     setState(() {
-                      ticker.add(new_ticker);
-                      buying.add(new_buy.toStringAsFixed(2));
-                      current.add(200.00);
-                      text_colors.add(Colors.green);
+                      _saveSettings(new_ticker, new_buy.toString());
                     });
-                    gettotals();
                     print('Resetting new ticker data.');
-                    new_ticker = '';
-                    new_buy = 0.0;
-                    _saveSettings();
                     Navigator.pop(context);
                   },
                 )
@@ -237,6 +293,5 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: body,
     );
-
   }
 }
