@@ -1,2 +1,2 @@
 # stockios
-![alt text](https://github.com/zimmyAZ/stockios/diagrams/AppFlow.png)
+![alt text](https://github.com/zimmyAZ/stockios/blob/master/diagrams/Appflow.png)
