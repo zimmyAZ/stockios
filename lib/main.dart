@@ -159,7 +159,6 @@ class _MyHomePageState extends State<MyHomePage> {
     temp_dates = prefs.getStringList('dates');
     temp_brokers = prefs.getStringList('brokers');
 
-    print(temp_tickers.length);
     print('Starting Compact');
     for(int i = 0; i < temp_tickers.length; i++){
       if(temp_web.isEmpty){
@@ -227,11 +226,66 @@ class _MyHomePageState extends State<MyHomePage> {
 
   _setSettings() async{
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setStringList('tickers', []);
-    prefs.setStringList('buys', []);
-    prefs.setStringList('dates', []);
-    prefs.setStringList('brokers', []);
+    prefs.setStringList('tickers', ['VXUS', 'VXUS', 'VXUS', 'VXUS', 'VXUS', 'VO', 'VO', 'VO', 'VTI', 'VTI', 'VTI', 'VTI', 'VNQ', 'VNQ', 'VNQ', 'NVDA', 'NVDA', 'AMD']);
+    prefs.setStringList('buys', ['54.97', '55.02', '55.58', '55.58', '56.70', '142.96', '153.40', '161.63', '137.04', '137.55', '137.55', '146.91', '80.50', '82.92', '82.92', '241.70', '241.70', '16.36']);
+    prefs.setStringList('dates', ['9/12/2017', '10/4/2017', '10/30/2017', '10/30/2017', '5/1/2018', '8/30/2017', '5/1/2018', '7/29/2018', '12/4/2017', '3/5/2018', '3/5/2018', '8/6/2018', '6/25/2018', '7/6/2018', '7/6/2018', '7/3/2018', '7/3/2018', '7/9/2018']);
+    prefs.setStringList('brokers', ['Vanguard', 'Vanguard', 'Vanguard', 'Vanguard', 'Vanguard', 'Vanguard', 'Vanguard', 'Vanguard', 'Vanguard', 'Vanguard', 'Vanguard', 'Vanguard', 'Vanguard', 'Vanguard', 'Vanguard', 'RobinHood', 'RobinHood', 'RobinHood']);
 
+  }
+
+  _showdetails(String ticker, String buy, String date, String broker, int position) {
+    showDialog(context: context,
+        child: new AlertDialog(
+            title: new Center(child: Text("$ticker Details")),
+            content: new Container(
+                width: 260.0,
+                height: 130.0,
+                decoration: new BoxDecoration(
+                  shape: BoxShape.rectangle,
+                  color: const Color(0xFFFFFF),
+                  borderRadius: new BorderRadius.all(new Radius.circular(10.0)),
+                ),
+                child: new Column(children: <Widget>[
+                  new Row(children: <Widget>[
+                    new Expanded(child: new Text('Ticker :', textAlign: TextAlign.left)),
+                    new Expanded(child: new Text('$ticker', textAlign: TextAlign.right))
+                  ],
+                  ),
+                  new Row(children: <Widget>[
+                    new Expanded(child: new Text('Buy :', textAlign: TextAlign.start)),
+                    new Expanded(child: new Text('$buy', textAlign: TextAlign.end))
+                  ],
+                  ),
+                  new Row(children: <Widget>[
+                    new Expanded(child: new Text('Date :', textAlign: TextAlign.left)),
+                    new Expanded(child: new Text('$date', textAlign: TextAlign.right))
+                  ],
+                  ),
+                  new Row(children: <Widget>[
+                    new Expanded(child: new Text('Broker :', textAlign: TextAlign.left)),
+                    new Expanded(child: new Text('$broker', textAlign: TextAlign.right))
+                  ],
+                  ),
+                  new Row(children: <Widget>[
+                    new Expanded(child: new Padding(padding: EdgeInsets.all(5.0), child: new RaisedButton(
+                      child: new Text("Delete", textAlign: TextAlign.left),
+                      color: Colors.red,
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                    ))),
+                    new Expanded(child: new Padding(padding: EdgeInsets.all(5.0), child: new RaisedButton(
+                      child: new Text("Close", textAlign: TextAlign.right),
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                    )))
+                  ],
+                  ),
+                ]
+                )
+            )
+        ));
   }
 
 
@@ -268,51 +322,26 @@ class _MyHomePageState extends State<MyHomePage> {
     for (var i = 0; i < ticker.length; i++) {
       temp_rows.add(new DataRow(
           cells: [
-            new DataCell(new Text(ticker[i])),
-            new DataCell(new Text(current[i].toStringAsFixed(2),
-                style: new TextStyle(color: text_colors[i],))),
+            new DataCell(new Center(child: Text(ticker[i])),
+                showEditIcon: false,
+                onTap: () {
+                  _showdetails(ticker[i], buying[i], dates[i], brokers[i], i);
+                  print('${ticker[i]}, ${buying[i]}, ${dates[i]}, ${brokers[i]}');
+                }),
+            new DataCell(new Center(child:Text(current[i].toStringAsFixed(2),
+                style: new TextStyle(color: text_colors[i],)),),
+                showEditIcon: false,
+                onTap: () {
+                  _showdetails(ticker[i], buying[i], dates[i], brokers[i], i);
+                  print('${ticker[i]}, ${buying[i]}, ${dates[i]}, ${brokers[i]}');
+                }),
             new DataCell(new Text(change_dollar[i].toStringAsFixed(2),
                 style: new TextStyle(color: text_colors[i]),),
-              showEditIcon: true,
-              onTap: () {
-                showDialog(context: context,
-                child: new AlertDialog(
-                    title: new Center(child: Text("${ticker[i]} Details")),
-                    content: new Container(
-                        width: 260.0,
-                        height: 100.0,
-                        decoration: new BoxDecoration(
-                          shape: BoxShape.rectangle,
-                          color: const Color(0xFFFFFF),
-                          borderRadius: new BorderRadius.all(new Radius.circular(10.0)),
-                        ),
-                        child: new Column(children: <Widget>[
-                          new Row(children: <Widget>[
-                            new Text('Ticker :', textAlign: TextAlign.center),
-                            new Text('${ticker[i]}', textAlign: TextAlign.center)
-                          ],
-                          ),
-                          new Row(children: <Widget>[
-                            new Text('Buy :', textAlign: TextAlign.center),
-                            new Text('${buying[i]}', textAlign: TextAlign.center)
-                          ],
-                          ),
-                          new Row(children: <Widget>[
-                            new Text('Date :', textAlign: TextAlign.center),
-                            new Text('${dates[i]}', textAlign: TextAlign.center)
-                          ],
-                          ),
-                          new Row(children: <Widget>[
-                            new Text('Broker :', textAlign: TextAlign.center),
-                            new Text('${brokers[i]}', textAlign: TextAlign.center)
-                          ],
-                          )
-                        ]
-                        )
-                    )
-                ));
-                print('${ticker[i]}, ${buying[i]}, ${dates[i]}, ${brokers[i]}');
-              },),
+                showEditIcon: false,
+                onTap: () {
+                _showdetails(ticker[i], buying[i], dates[i], brokers[i], i);
+                  print('${ticker[i]}, ${buying[i]}, ${dates[i]}, ${brokers[i]}');
+                },)
             //            new DataCell(new Text(change_percent[i].toStringAsFixed(2)))
           ]
       ));
@@ -398,7 +427,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   void initState() {
-    _setSettings();
+//    _setSettings();
     _load();
   }
 
@@ -428,42 +457,6 @@ class _MyHomePageState extends State<MyHomePage> {
       ],
     );
 
-    final details_dialog = AlertDialog(
-      title: new Center(child: Text("Add new ticker")),
-      content: new Container(
-          width: 260.0,
-          height: 250.0,
-          decoration: new BoxDecoration(
-            shape: BoxShape.rectangle,
-            color: const Color(0xFFFFFF),
-            borderRadius: new BorderRadius.all(new Radius.circular(10.0)),
-          ),
-          child: new Column(children: <Widget>[
-            new Row(children: <Widget>[
-              new Text('Ticker :'),
-              new Text('AAPL')
-            ],
-          ),
-            new Row(children: <Widget>[
-              new Text('Buy :'),
-              new Text('50')
-            ],
-            ),
-            new Row(children: <Widget>[
-              new Text('Date :'),
-              new Text('8/8/18')
-            ],
-            ),
-            new Row(children: <Widget>[
-              new Text('Broker :'),
-              new Text('Vanguard')
-            ],
-            )
-          ]
-        )
-      )
-    );
-
     final body = Container(
       width: MediaQuery.of(context).size.width,
       padding: EdgeInsets.all(4.0),
@@ -489,7 +482,6 @@ class _MyHomePageState extends State<MyHomePage> {
             child: new AlertDialog(
               title: new Center(child: Text("Add new ticker")),
               content: new Container(
-                padding: const EdgeInsets.all(4.0),
                 width: 260.0,
                 height: 250.0,
                 decoration: new BoxDecoration(
@@ -498,7 +490,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   borderRadius: new BorderRadius.all(new Radius.circular(10.0)),
                 ),
                 child: new Column(children: <Widget>[
-                  new TextField(
+                new Expanded(child: new Padding(padding: EdgeInsets.all(10.0), child: new TextField(
                     decoration: new InputDecoration(
                         border: new OutlineInputBorder(
                           borderRadius: const BorderRadius.all(
@@ -512,8 +504,8 @@ class _MyHomePageState extends State<MyHomePage> {
                     onChanged: (String text) {
                       new_ticker = text;
                     },
-                  ),
-                  new TextField(
+                  ))),
+                new Expanded(child: new Padding(padding: EdgeInsets.all(10.0), child: new TextField(
                     decoration: new InputDecoration(
                         border: new OutlineInputBorder(
                           borderRadius: const BorderRadius.all(
@@ -527,8 +519,8 @@ class _MyHomePageState extends State<MyHomePage> {
                     onChanged: (String text) {
                       new_buy = double.parse(text);
                     },
-                  ),
-                  new TextField(
+                  ))),
+                new Expanded(child: new Padding(padding: EdgeInsets.all(10.0), child: new TextField(
                     decoration: new InputDecoration(
                         border: new OutlineInputBorder(
                           borderRadius: const BorderRadius.all(
@@ -542,8 +534,8 @@ class _MyHomePageState extends State<MyHomePage> {
                     onChanged: (String text) {
                       new_date = text;
                     },
-                  ),
-                  new TextField(
+                  ))),
+                new Expanded(child: new Padding(padding: EdgeInsets.all(10.0), child: new TextField(
                     decoration: new InputDecoration(
                         border: new OutlineInputBorder(
                           borderRadius: const BorderRadius.all(
@@ -557,7 +549,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     onChanged: (String text) {
                       new_broker = text;
                     },
-                  ),
+                  ))),
                 ],),),
               actions: <Widget>[
                 new FlatButton(
