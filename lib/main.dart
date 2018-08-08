@@ -34,12 +34,19 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   bool _dataloaded = false;
+
   String new_ticker;
   double new_buy;
+  String new_date;
+  String new_broker;
+
   List<String>ticker = [];
   List<String>webtickers = [];
   List<String>buying = [];
   List<double>current = [];
+  List<String>dates = [];
+  List<String>brokers = [];
+
   List compact = [];
   List temp_compact = [];
   List<Color> text_colors = [];
@@ -87,17 +94,16 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future _getweb(get_ticker) async {
     String temp_price;
-    var contents = await http.read('https://www.nasdaq.com/symbol/$get_ticker');
-    var webdata_list = contents.split('</div>');;
+    var contents = await http.read('https://www.thestreet.com/quote/$get_ticker.html');
+    var webdata_list = contents.split('<div');
     try {
       for (var i = 0; i < webdata_list.length; i++) {
-        if (webdata_list[i].contains('qwidget_lastsale')) {
+        if (webdata_list[i].contains('id="currentPrice" ')) {
           var webdata_amount = webdata_list[i].split('>');
-          print('$get_ticker');
-          temp_price = webdata_amount[2].replaceAll('\$', '');
+          temp_price = webdata_amount[1].replaceAll(' ', '');
+          temp_price = webdata_amount[1].replaceAll('</div', '');
           temp_prices.add(double.parse(temp_price));
           temp_compact.add([get_ticker, double.parse(temp_price)]);
-          print(temp_compact);
         }
       }
     }
@@ -110,6 +116,8 @@ class _MyHomePageState extends State<MyHomePage> {
       compact = temp_compact;
       _singlestate = true;
     });
+    webdata_list = [];
+    temp_price = '';
   }
 
   Future _rungetweb() async{
@@ -140,10 +148,17 @@ class _MyHomePageState extends State<MyHomePage> {
     List<String>temp_tickers = [];
     List<String>temp_buys = [];
     List<String>temp_web = [];
+    List<String>temp_dates = [];
+    List<String>temp_brokers = [];
+
     SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs = await SharedPreferences.getInstance();
+
     temp_tickers = prefs.getStringList('tickers');
     temp_buys = prefs.getStringList('buys');
+    temp_dates = prefs.getStringList('dates');
+    temp_brokers = prefs.getStringList('brokers');
+
     print(temp_tickers.length);
     print('Starting Compact');
     for(int i = 0; i < temp_tickers.length; i++){
@@ -166,18 +181,28 @@ class _MyHomePageState extends State<MyHomePage> {
     print(temp_web.length);
     setState(() {
       print('Loading variables.');
+
       ticker = temp_tickers;
       buying = temp_buys;
+      dates = temp_dates;
+      brokers = temp_brokers;
+
       webtickers = temp_web;
       _loadstate = true;
     });
+    temp_tickers = [];
+    temp_buys = [];
+    temp_web = [];
+    temp_dates = [];
   }
 
-  _saveSettings(String newticker, String newbuy) async{
+  _saveSettings(String newticker, String newbuy, String newdate, String newbroker) async{
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
       ticker.add(newticker);
       buying.add(newbuy);
+      dates.add(newdate);
+      brokers.add(newbroker);
       });
     await _getweb(newticker);
     while(true) {
@@ -196,13 +221,19 @@ class _MyHomePageState extends State<MyHomePage> {
     });
     prefs.setStringList('tickers', ticker);
     prefs.setStringList('buys', buying);
+    prefs.setStringList('dates', dates);
+    prefs.setStringList('broker', brokers);
   }
 
   _setSettings() async{
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setStringList('tickers', ['AAPL', 'MSFT', 'MSFT']);
-    prefs.setStringList('buys', ['100', '150', '20']);
+    prefs.setStringList('tickers', ['VXUS', 'VXUS', 'VXUS', 'VXUS', 'VXUS', 'VO', 'VO', 'VO', 'VTI', 'VTI', 'VTI', 'VTI', 'VNQ', 'VNQ', 'VNQ', 'NVDA', 'NVDA', 'AMD']);
+    prefs.setStringList('buys', ['54.97', '55.02', '55.58', '55.58', '56.70', '142.96', '153.40', '161.63', '137.04', '137.55', '137.55', '146.91', '80.50', '82.92', '82.92', '241.70', '241.70', '16.36']);
+    prefs.setStringList('dates', ['9/12/2017', '10/4/2017', '10/30/2017', '10/30/2017', '5/1/2018', '8/30/2017', '5/1/2018', '7/29/2018', '12/4/2017', '3/5/2018', '3/5/2018', '8/6/2018', '6/25/2018', '7/6/2018', '7/6/2018', '7/3/2018', '7/3/2018', '7/9/2018']);
+    prefs.setStringList('brokers', ['9/12/2017', '10/4/2017', '10/30/2017', '10/30/2017', '5/1/2018', '8/30/2017', '5/1/2018', '7/29/2018', '12/4/2017', '3/5/2018', '3/5/2018', '8/6/2018', '6/25/2018', '7/6/2018', '7/6/2018', '7/3/2018', '7/3/2018', '7/9/2018']);
+
   }
+
 
   Future _gettotaldata() async {
     double temp_total_buying = 0.0;
@@ -239,9 +270,49 @@ class _MyHomePageState extends State<MyHomePage> {
           cells: [
             new DataCell(new Text(ticker[i])),
             new DataCell(new Text(current[i].toStringAsFixed(2),
-                style: new TextStyle(color: text_colors[i]))),
+                style: new TextStyle(color: text_colors[i],))),
             new DataCell(new Text(change_dollar[i].toStringAsFixed(2),
-                style: new TextStyle(color: text_colors[i]))),
+                style: new TextStyle(color: text_colors[i]),),
+              showEditIcon: true,
+              onTap: () {
+                showDialog(context: context,
+                child: new AlertDialog(
+                    title: new Center(child: Text("${ticker[i]} Details")),
+                    content: new Container(
+                        width: 260.0,
+                        height: 100.0,
+                        decoration: new BoxDecoration(
+                          shape: BoxShape.rectangle,
+                          color: const Color(0xFFFFFF),
+                          borderRadius: new BorderRadius.all(new Radius.circular(10.0)),
+                        ),
+                        child: new Column(children: <Widget>[
+                          new Row(children: <Widget>[
+                            new Text('Ticker :'),
+                            new Text('${ticker[i]}')
+                          ],
+                          ),
+                          new Row(children: <Widget>[
+                            new Text('Buy :'),
+                            new Text('${buying[i]}')
+                          ],
+                          ),
+                          new Row(children: <Widget>[
+                            new Text('Date :'),
+                            new Text('${dates[i]}')
+                          ],
+                          ),
+                          new Row(children: <Widget>[
+                            new Text('Broker :'),
+                            new Text('${brokers[i]}')
+                          ],
+                          )
+                        ]
+                        )
+                    )
+                ));
+                print('${ticker[i]}, ${buying[i]}, ${dates[i]}, ${brokers[i]}');
+              },),
             //            new DataCell(new Text(change_percent[i].toStringAsFixed(2)))
           ]
       ));
@@ -298,6 +369,7 @@ class _MyHomePageState extends State<MyHomePage> {
       _loadstate = false;
       _webstate = false;
     });
+    print(rows.toString());
   }
 
   _refresh() async {
@@ -326,7 +398,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   void initState() {
-//    _setSettings();
+    _setSettings();
     _load();
   }
 
@@ -337,13 +409,12 @@ class _MyHomePageState extends State<MyHomePage> {
         margin: EdgeInsets.all(4.0),
         child: new Material(
           child: new DataTable(columns: cols, rows: rows),
-          color: Colors.white70
+          color: Colors.white70,
         )
     );
 
     final total_card = Card(
         margin: EdgeInsets.all(4.0),
-        color: Colors.greenAccent,
         child: new Material(
           child: new DataTable(columns: cols_total, rows: rows_total),
         )
@@ -357,9 +428,45 @@ class _MyHomePageState extends State<MyHomePage> {
       ],
     );
 
+    final details_dialog = AlertDialog(
+      title: new Center(child: Text("Add new ticker")),
+      content: new Container(
+          width: 260.0,
+          height: 250.0,
+          decoration: new BoxDecoration(
+            shape: BoxShape.rectangle,
+            color: const Color(0xFFFFFF),
+            borderRadius: new BorderRadius.all(new Radius.circular(10.0)),
+          ),
+          child: new Column(children: <Widget>[
+            new Row(children: <Widget>[
+              new Text('Ticker :'),
+              new Text('AAPL')
+            ],
+          ),
+            new Row(children: <Widget>[
+              new Text('Buy :'),
+              new Text('50')
+            ],
+            ),
+            new Row(children: <Widget>[
+              new Text('Date :'),
+              new Text('8/8/18')
+            ],
+            ),
+            new Row(children: <Widget>[
+              new Text('Broker :'),
+              new Text('Vanguard')
+            ],
+            )
+          ]
+        )
+      )
+    );
+
     final body = Container(
       width: MediaQuery.of(context).size.width,
-      padding: EdgeInsets.all(5.0),
+      padding: EdgeInsets.all(4.0),
       decoration: BoxDecoration(
         gradient: LinearGradient(colors: [
           Colors.black45,
@@ -375,30 +482,82 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
       appBar: appBar,
       floatingActionButton: FloatingActionButton(
-        tooltip: 'Add', // used by assistive technologies
+        tooltip: 'Add',
         child: Icon(Icons.add),
         onPressed: () => showDialog(
             context: context,
             child: new AlertDialog(
-              title: new Text("Add new ticker"),
-              content: new Column(children: <Widget>[
-                new TextField(
-                  decoration: new InputDecoration(
-                      labelText: "Ticker"
-                  ),
-                  onChanged: (String text) {
-                    new_ticker = text;
-                  },
+              title: new Center(child: Text("Add new ticker")),
+              content: new Container(
+                width: 260.0,
+                height: 250.0,
+                decoration: new BoxDecoration(
+                  shape: BoxShape.rectangle,
+                  color: const Color(0xFFFFFF),
+                  borderRadius: new BorderRadius.all(new Radius.circular(10.0)),
                 ),
-                new TextField(
-                  decoration: new InputDecoration(
-                      labelText: "Buy Price"
+                child: new Column(children: <Widget>[
+                  new TextField(
+                    decoration: new InputDecoration(
+                        border: new OutlineInputBorder(
+                          borderRadius: const BorderRadius.all(
+                            const Radius.circular(10.0),
+                          ),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[300],
+                        labelText: "Ticker"
+                    ),
+                    onChanged: (String text) {
+                      new_ticker = text;
+                    },
                   ),
-                  onChanged: (String text) {
-                    new_buy = double.parse(text);
-                  },
-                ),
-              ],),
+                  new TextField(
+                    decoration: new InputDecoration(
+                        border: new OutlineInputBorder(
+                          borderRadius: const BorderRadius.all(
+                            const Radius.circular(10.0),
+                          ),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[300],
+                        labelText: "Buy Price"
+                    ),
+                    onChanged: (String text) {
+                      new_buy = double.parse(text);
+                    },
+                  ),
+                  new TextField(
+                    decoration: new InputDecoration(
+                        border: new OutlineInputBorder(
+                          borderRadius: const BorderRadius.all(
+                            const Radius.circular(10.0),
+                          ),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[300],
+                        labelText: "Buy Date"
+                    ),
+                    onChanged: (String text) {
+                      new_date = text;
+                    },
+                  ),
+                  new TextField(
+                    decoration: new InputDecoration(
+                        border: new OutlineInputBorder(
+                          borderRadius: const BorderRadius.all(
+                            const Radius.circular(10.0),
+                          ),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[300],
+                        labelText: "Broker"
+                    ),
+                    onChanged: (String text) {
+                      new_broker = text;
+                    },
+                  ),
+                ],),),
               actions: <Widget>[
                 new FlatButton(
                   child: new Text("Cancel"),
@@ -407,7 +566,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 new FlatButton(
                   child: new Text("Add"),
                   onPressed: () {
-                    _saveSettings(new_ticker, new_buy.toString());
+                    _saveSettings(new_ticker, new_buy.toString(), new_date, new_broker);
                     print('Resetting new ticker data.');
                     Navigator.pop(context);
                   },
@@ -427,4 +586,10 @@ class _MyHomePageState extends State<MyHomePage> {
 //Add delete option
 //Show more data like Purchase data / Place of purchase
 //Add some charts, everyone loves charts
-//Add to App Store 
+//Add to App Store
+//Get logo
+//Change color theme
+//Create for desktop (MacOS only first)
+//Buy www.stockios.com in amazon
+//Setup login to save data in AWS
+//Get ads cause why not
