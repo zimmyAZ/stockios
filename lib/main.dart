@@ -227,10 +227,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
   _setSettings() async{
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setStringList('tickers', ['VXUS', 'VXUS', 'VXUS', 'VXUS', 'VXUS', 'VO', 'VO', 'VO', 'VTI', 'VTI', 'VTI', 'VTI', 'VNQ', 'VNQ', 'VNQ', 'NVDA', 'NVDA', 'AMD']);
-    prefs.setStringList('buys', ['54.97', '55.02', '55.58', '55.58', '56.70', '142.96', '153.40', '161.63', '137.04', '137.55', '137.55', '146.91', '80.50', '82.92', '82.92', '241.70', '241.70', '16.36']);
-    prefs.setStringList('dates', ['9/12/2017', '10/4/2017', '10/30/2017', '10/30/2017', '5/1/2018', '8/30/2017', '5/1/2018', '7/29/2018', '12/4/2017', '3/5/2018', '3/5/2018', '8/6/2018', '6/25/2018', '7/6/2018', '7/6/2018', '7/3/2018', '7/3/2018', '7/9/2018']);
-    prefs.setStringList('brokers', ['9/12/2017', '10/4/2017', '10/30/2017', '10/30/2017', '5/1/2018', '8/30/2017', '5/1/2018', '7/29/2018', '12/4/2017', '3/5/2018', '3/5/2018', '8/6/2018', '6/25/2018', '7/6/2018', '7/6/2018', '7/3/2018', '7/3/2018', '7/9/2018']);
+    prefs.setStringList('tickers', []);
+    prefs.setStringList('buys', []);
+    prefs.setStringList('dates', []);
+    prefs.setStringList('brokers', []);
 
   }
 
@@ -288,23 +288,23 @@ class _MyHomePageState extends State<MyHomePage> {
                         ),
                         child: new Column(children: <Widget>[
                           new Row(children: <Widget>[
-                            new Text('Ticker :'),
-                            new Text('${ticker[i]}')
+                            new Text('Ticker :', textAlign: TextAlign.center),
+                            new Text('${ticker[i]}', textAlign: TextAlign.center)
                           ],
                           ),
                           new Row(children: <Widget>[
-                            new Text('Buy :'),
-                            new Text('${buying[i]}')
+                            new Text('Buy :', textAlign: TextAlign.center),
+                            new Text('${buying[i]}', textAlign: TextAlign.center)
                           ],
                           ),
                           new Row(children: <Widget>[
-                            new Text('Date :'),
-                            new Text('${dates[i]}')
+                            new Text('Date :', textAlign: TextAlign.center),
+                            new Text('${dates[i]}', textAlign: TextAlign.center)
                           ],
                           ),
                           new Row(children: <Widget>[
-                            new Text('Broker :'),
-                            new Text('${brokers[i]}')
+                            new Text('Broker :', textAlign: TextAlign.center),
+                            new Text('${brokers[i]}', textAlign: TextAlign.center)
                           ],
                           )
                         ]
@@ -489,6 +489,7 @@ class _MyHomePageState extends State<MyHomePage> {
             child: new AlertDialog(
               title: new Center(child: Text("Add new ticker")),
               content: new Container(
+                padding: const EdgeInsets.all(4.0),
                 width: 260.0,
                 height: 250.0,
                 decoration: new BoxDecoration(
