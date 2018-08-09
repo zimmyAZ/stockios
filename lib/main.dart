@@ -22,6 +22,14 @@ class stockios extends StatelessWidget {
   }
 }
 
+class totals{
+  final String _ticker;
+  final double _amount;
+  final int _quantity;
+
+  totals(this._ticker, this._amount, this._quantity);
+}
+
 class MyHomePage extends StatefulWidget {
 
   MyHomePage({Key key, this.title}) : super(key: key);
@@ -34,6 +42,9 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   bool _dataloaded = false;
+
+  List total_invest = [];
+  List total_performance = [];
 
   String new_ticker;
   double new_buy;
@@ -68,6 +79,12 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _webstate = false;
   bool _singlestate = false;
 
+  List<totals> perf = [];
+  List<totals> invest = [];
+
+  var chartWidget_invest_bar;
+  var chartWidget_invest_pie;
+
   final List<DataColumn> cols = [
     new DataColumn(
       label: const Text('Ticker'),
@@ -92,7 +109,7 @@ class _MyHomePageState extends State<MyHomePage> {
     ),
   ];
 
-  Future _getweb(get_ticker) async {
+  Future _getweb(String get_ticker, bool single) async {
     String temp_price;
     var contents = await http.read('https://www.thestreet.com/quote/$get_ticker.html');
     var webdata_list = contents.split('<div');
@@ -112,6 +129,11 @@ class _MyHomePageState extends State<MyHomePage> {
       print('Issues with $get_ticker');
     }
     setState(() {
+      if(single == true){
+        setState(() {
+          current.add(double.parse(temp_price));
+        });
+      }
       print('Compact : ${temp_compact.toString()}');
       compact = temp_compact;
       _singlestate = true;
@@ -124,7 +146,7 @@ class _MyHomePageState extends State<MyHomePage> {
     int counter = 0;
     List<double> temp_current = [];
     for(int i = 0; i < webtickers.length; i++) {
-      await _getweb(webtickers[i]);
+      await _getweb(webtickers[i], false);
       counter ++;
     }
     for(int j = 0; j < ticker.length; j++){
@@ -168,7 +190,6 @@ class _MyHomePageState extends State<MyHomePage> {
       else{
         for(int j = 0; j < temp_web.length; j++){
           if(temp_web.contains(temp_tickers[i])){
-            print('Dupe');
           }
           else{
             print('Add ${temp_tickers[i]}');
@@ -177,7 +198,6 @@ class _MyHomePageState extends State<MyHomePage> {
         }
       }
     }
-    print(temp_web.length);
     setState(() {
       print('Loading variables.');
 
@@ -203,15 +223,13 @@ class _MyHomePageState extends State<MyHomePage> {
       dates.add(newdate);
       brokers.add(newbroker);
       });
-    await _getweb(newticker);
+    await _getweb(newticker, true);
     while(true) {
       if (_singlestate == true) {
         break;
       }
     }
-    print(text_colors.length);
     await _getcolordata();
-    print(text_colors.length);
     await _gettotaldata();
     await _gettabledata();
 
@@ -221,7 +239,120 @@ class _MyHomePageState extends State<MyHomePage> {
     prefs.setStringList('tickers', ticker);
     prefs.setStringList('buys', buying);
     prefs.setStringList('dates', dates);
-    prefs.setStringList('broker', brokers);
+    prefs.setStringList('brokers', brokers);
+  }
+
+  _get_total_performance(){
+    print('Getting total performance data.');
+    for(int i = 0; i < compact.length; i++){
+      var line = compact[i];
+      int temp_total_number = 0;
+      double temp_total_perform = 0.0;
+      for(int j = 0; j < ticker.length; j++){
+        if(ticker[j] == line[0]){
+          temp_total_number += 1;
+          temp_total_perform += change_dollar[j];
+        }
+      }
+      setState((){
+        total_performance.add([line[0], temp_total_perform, temp_total_number]);
+      });
+    }
+    print(total_performance.toString());
+  }
+
+  _get_total_investment(){
+    print('Getting total investment data.');
+    for(int i = 0; i < compact.length; i++){
+      var line = compact[i];
+      int temp_total_number = 0;
+      double temp_total_invest = 0.0;
+      for(int j = 0; j < ticker.length; j++){
+        if(ticker[j] == line[0]){
+          temp_total_number += 1;
+          temp_total_invest += current[j];
+        }
+      }
+      setState((){
+        total_invest.add([line[0], temp_total_invest, temp_total_number]);
+      });
+    }
+    print(total_invest.toString());
+  }
+
+  _set_charts(){
+    print('Getting chart data.');
+
+    List<totals> temp_perf = [];
+    List<totals> temp_invest = [];
+
+    for (var i = 0; i < total_performance.length; i++) {
+      var line = total_performance[i];
+      temp_perf.add(new totals(line[0], line[1], line[2]));
+    }
+    for (var j = 0; j < total_invest.length; j++) {
+      var line = total_invest[j];
+      print(line[0]);
+      print(line[1]);
+      temp_invest.add(new totals(line[0], line[1], line[2]));
+    }
+    setState((){
+      invest = temp_invest;
+      perf = temp_perf;
+    });
+
+    var series_invest_bar = [
+      new charts.Series(
+        id: 'Investment Bar',
+        domainFn: (totals clickData, _) => clickData._ticker,
+        measureFn: (totals clickData, _) => clickData._amount,
+        data: invest,
+      ),
+    ];
+
+    var series_invest_pie = [
+      new charts.Series(
+        id: 'Invest Pie',
+        domainFn: (totals clickData, _) => clickData._ticker,
+        measureFn: (totals clickData, _) => clickData._amount,
+        data: invest,
+      ),
+    ];
+
+    var chart_invest_bar = new charts.BarChart(
+      series_invest_bar,
+      animate: true,
+      defaultRenderer: new charts.BarRendererConfig(
+          cornerStrategy: const charts.ConstCornerStrategy(30)),
+    );
+
+    var chart_invest_pie = new charts.PieChart(
+        series_invest_pie,
+        animate: true,
+        defaultRenderer: new charts.ArcRendererConfig(
+            arcWidth: 60,
+            arcRendererDecorators: [new charts.ArcLabelDecorator()])
+    );
+
+    setState((){
+      print('Created investment bar chart.');
+      chartWidget_invest_bar = new Padding(
+        padding: new EdgeInsets.all(32.0),
+        child: new SizedBox(
+          height: 400.0,
+          child: chart_invest_bar,
+        ),
+      );
+
+      print('Created investment pie chart.');
+      chartWidget_invest_pie = new Padding(
+        padding: new EdgeInsets.all(4.0),
+        child: new SizedBox(
+          height: 300.0,
+          child: chart_invest_pie,
+        ),
+      );
+    });
   }
 
   _setSettings() async{
@@ -233,13 +364,13 @@ class _MyHomePageState extends State<MyHomePage> {
 
   }
 
-  _showdetails(String ticker, String buy, String date, String broker, int position) {
+  _showdetails(String curticker, String buy, String curcurrent, String date, String broker, int position) {
     showDialog(context: context,
         child: new AlertDialog(
-            title: new Center(child: Text("$ticker Details")),
+            title: new Center(child: Text("$curticker Details")),
             content: new Container(
                 width: 260.0,
-                height: 130.0,
+                height: 150.0,
                 decoration: new BoxDecoration(
                   shape: BoxShape.rectangle,
                   color: const Color(0xFFFFFF),
@@ -248,12 +379,17 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: new Column(children: <Widget>[
                   new Row(children: <Widget>[
                     new Expanded(child: new Text('Ticker :', textAlign: TextAlign.left)),
-                    new Expanded(child: new Text('$ticker', textAlign: TextAlign.right))
+                    new Expanded(child: new Text('$curticker', textAlign: TextAlign.right))
                   ],
                   ),
                   new Row(children: <Widget>[
                     new Expanded(child: new Text('Buy :', textAlign: TextAlign.start)),
-                    new Expanded(child: new Text('$buy', textAlign: TextAlign.end))
+                    new Expanded(child: new Text('\$$buy', textAlign: TextAlign.end))
+                  ],
+                  ),
+                  new Row(children: <Widget>[
+                    new Expanded(child: new Text('Current :', textAlign: TextAlign.left)),
+                    new Expanded(child: new Text('\$$curcurrent', textAlign: TextAlign.right))
                   ],
                   ),
                   new Row(children: <Widget>[
@@ -271,12 +407,22 @@ class _MyHomePageState extends State<MyHomePage> {
                       child: new Text("Delete", textAlign: TextAlign.left),
                       color: Colors.red,
                       onPressed: () {
+                        setState((){
+                          ticker.removeAt(position);
+                          buying.removeAt(position);
+                          dates.removeAt(position);
+                          current.removeAt(position);
+                          brokers.removeAt(position);
+                        });
+                        print(position);
+                        _refresh();
                         Navigator.pop(context);
                       },
                     ))),
                     new Expanded(child: new Padding(padding: EdgeInsets.all(5.0), child: new RaisedButton(
                       child: new Text("Close", textAlign: TextAlign.right),
                       onPressed: () {
+                        print(position);
                         Navigator.pop(context);
                       },
                     )))
@@ -285,15 +431,16 @@ class _MyHomePageState extends State<MyHomePage> {
                 ]
                 )
             )
-        ));
+        )
+    );
   }
-
 
   Future _gettotaldata() async {
     double temp_total_buying = 0.0;
     double temp_total_percent = 0.0;
     double temp_total_dollar = 0.0;
-    for(var i = 0; i < buying.length; i++){
+
+    for(int i = 0; i < buying.length; i++){
       temp_total_buying += double.parse(buying[i]);
       temp_total_dollar += current[i];
       double dollar = current[i] - double.parse(buying[i]);
@@ -318,41 +465,47 @@ class _MyHomePageState extends State<MyHomePage> {
   Future _gettabledata() async {
     List<DataRow> temp_rows = [];
     List<DataRow> temp_rows_total = [];
-
+    print(ticker.length);
+    print(buying.length);
+    print(dates.length);
+    print(brokers.length);
     for (var i = 0; i < ticker.length; i++) {
       temp_rows.add(new DataRow(
-          cells: [
-            new DataCell(new Center(child: Text(ticker[i])),
-                showEditIcon: false,
-                onTap: () {
-                  _showdetails(ticker[i], buying[i], dates[i], brokers[i], i);
-                  print('${ticker[i]}, ${buying[i]}, ${dates[i]}, ${brokers[i]}');
-                }),
-            new DataCell(new Center(child:Text(current[i].toStringAsFixed(2),
-                style: new TextStyle(color: text_colors[i],)),),
-                showEditIcon: false,
-                onTap: () {
-                  _showdetails(ticker[i], buying[i], dates[i], brokers[i], i);
-                  print('${ticker[i]}, ${buying[i]}, ${dates[i]}, ${brokers[i]}');
-                }),
-            new DataCell(new Text(change_dollar[i].toStringAsFixed(2),
-                style: new TextStyle(color: text_colors[i]),),
-                showEditIcon: false,
-                onTap: () {
-                _showdetails(ticker[i], buying[i], dates[i], brokers[i], i);
-                  print('${ticker[i]}, ${buying[i]}, ${dates[i]}, ${brokers[i]}');
-                },)
-            //            new DataCell(new Text(change_percent[i].toStringAsFixed(2)))
-          ]
+        cells: [
+          new DataCell(new Center(child: Text(ticker[i])),
+            showEditIcon: false,
+            onTap: () {
+              _showdetails(ticker[i], buying[i], current[i].toString(), dates[i], brokers[i], i);
+              print('${ticker[i]}, ${buying[i]}, ${dates[i]}, ${brokers[i]}');
+            }
+          ),
+          new DataCell(new Center(child:Text('\$${current[i].toStringAsFixed(2)}',
+            style: new TextStyle(color: text_colors[i],)),),
+            showEditIcon: false,
+            onTap: () {
+              print(i);
+              _showdetails(ticker[i], buying[i], current[i].toString(), dates[i], brokers[i], i);
+              print('${ticker[i]}, ${buying[i]}, ${dates[i]}, ${brokers[i]}');
+            }
+          ),
+          new DataCell(new Text('\$${change_dollar[i].toStringAsFixed(2)}',
+            style: new TextStyle(color: text_colors[i]),),
+            showEditIcon: false,
+            onTap: () {
+              _showdetails(ticker[i], buying[i], current[i].toString(), dates[i], brokers[i], i);
+              print('${ticker[i]}, ${buying[i]}, ${dates[i]}, ${brokers[i]}');
+            }
+          )
+        ]
       ));
     }
     temp_rows_total.add(new DataRow(
-        cells: [
-          new DataCell(new Text(total_dollar.toStringAsFixed(2))),
-          new DataCell(new Text(total_percent.toStringAsFixed(2))),
-          new DataCell(new Text(total_change_dollar.toStringAsFixed(2))),
-          //            new DataCell(new Text(change_percent[i].toStringAsFixed(2)))
-        ]
+      cells: [
+        new DataCell(new Text('\$${total_dollar.toStringAsFixed(2)}')),
+        new DataCell(new Text('\$${total_percent.toStringAsFixed(2)}')),
+        new DataCell(new Text('\$${total_change_dollar.toStringAsFixed(2)}')),
+        //            new DataCell(new Text(change_percent[i].toStringAsFixed(2)))
+      ]
     ));
     setState((){
       rows = temp_rows;
@@ -378,6 +531,43 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  _reset() {
+    setState(() {
+      print('Resetting all variables.');
+      total_invest = [];
+      total_performance = [];
+      new_ticker = '';
+      new_buy = 0.0;
+      new_date = '';
+      new_broker = '';
+      ticker = [];
+      webtickers = [];
+      buying = [];
+      current = [];
+      dates = [];
+      brokers = [];
+      compact = [];
+      temp_compact = [];
+      text_colors = [];
+      temp_prices = [];
+      change_dollar = [];
+      change_percent = [];
+      total_buying = 0.0;
+      total_dollar = 0.0;
+      total_percent = 0.0;
+      total_change_dollar = 0.0;
+      rows_total = [];
+      rows = [];
+      _loadstate = false;
+      _webstate = false;
+      _singlestate = false;
+      perf = [];
+      invest = [];
+      chartWidget_invest_bar = [];
+      chartWidget_invest_pie = [];
+    });
+  }
+
   _load() async {
     await _loadSettings();
     while(true){
@@ -394,6 +584,9 @@ class _MyHomePageState extends State<MyHomePage> {
     await _getcolordata();
     await _gettotaldata();
     await _gettabledata();
+    _get_total_investment();
+    _get_total_performance();
+    _set_charts();
     setState(() {
       _loadstate = false;
       _webstate = false;
@@ -402,14 +595,13 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   _refresh() async {
-    print(ticker.length);
+    _reset();
     await _loadSettings();
     while(true){
       if (_loadstate == true){
         break;
       }
     }
-    print(ticker.length);
     await _rungetweb();
     while(true){
       if (_webstate == true){
@@ -419,6 +611,9 @@ class _MyHomePageState extends State<MyHomePage> {
     await _getcolordata();
     await _gettotaldata();
     await _gettabledata();
+    _get_total_investment();
+    _get_total_performance();
+    _set_charts();
     setState(() {
       _loadstate = false;
       _webstate = false;
@@ -449,6 +644,22 @@ class _MyHomePageState extends State<MyHomePage> {
         )
     );
 
+    final invest_bar_card = Card(
+        margin: EdgeInsets.all(4.0),
+        child: new Container(
+          child:
+            chartWidget_invest_bar
+        )
+    );
+
+    final invest_pie_card = Card(
+        margin: EdgeInsets.all(4.0),
+        child: new Container(
+          child:
+            chartWidget_invest_pie
+        )
+    );
+
     final appBar = AppBar(
       title: const Text('Stock Monitor'),
       backgroundColor: Colors.blueGrey,
@@ -468,7 +679,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       child: ListView(
         scrollDirection: Axis.vertical,
-        children: <Widget>[main_card, total_card],
+        children: <Widget>[main_card, total_card, invest_bar_card, invest_pie_card],
       ),
     );
 
@@ -478,94 +689,94 @@ class _MyHomePageState extends State<MyHomePage> {
         tooltip: 'Add',
         child: Icon(Icons.add),
         onPressed: () => showDialog(
-            context: context,
-            child: new AlertDialog(
-              title: new Center(child: Text("Add new ticker")),
-              content: new Container(
-                width: 260.0,
-                height: 250.0,
-                decoration: new BoxDecoration(
-                  shape: BoxShape.rectangle,
-                  color: const Color(0xFFFFFF),
-                  borderRadius: new BorderRadius.all(new Radius.circular(10.0)),
-                ),
-                child: new Column(children: <Widget>[
-                new Expanded(child: new Padding(padding: EdgeInsets.all(10.0), child: new TextField(
-                    decoration: new InputDecoration(
-                        border: new OutlineInputBorder(
-                          borderRadius: const BorderRadius.all(
-                            const Radius.circular(10.0),
-                          ),
+          context: context,
+          child: new AlertDialog(
+            title: new Center(child: Text("Add new ticker")),
+            content: new Container(
+              width: 260.0,
+              height: 250.0,
+              decoration: new BoxDecoration(
+                shape: BoxShape.rectangle,
+                color: const Color(0xFFFFFF),
+                borderRadius: new BorderRadius.all(new Radius.circular(10.0)),
+              ),
+              child: new Column(children: <Widget>[
+              new Expanded(child: new Padding(padding: EdgeInsets.all(10.0), child: new TextField(
+                  decoration: new InputDecoration(
+                      border: new OutlineInputBorder(
+                        borderRadius: const BorderRadius.all(
+                          const Radius.circular(10.0),
                         ),
-                        filled: true,
-                        fillColor: Colors.grey[300],
-                        labelText: "Ticker"
-                    ),
-                    onChanged: (String text) {
-                      new_ticker = text;
-                    },
-                  ))),
-                new Expanded(child: new Padding(padding: EdgeInsets.all(10.0), child: new TextField(
-                    decoration: new InputDecoration(
-                        border: new OutlineInputBorder(
-                          borderRadius: const BorderRadius.all(
-                            const Radius.circular(10.0),
-                          ),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[300],
-                        labelText: "Buy Price"
-                    ),
-                    onChanged: (String text) {
-                      new_buy = double.parse(text);
-                    },
-                  ))),
-                new Expanded(child: new Padding(padding: EdgeInsets.all(10.0), child: new TextField(
-                    decoration: new InputDecoration(
-                        border: new OutlineInputBorder(
-                          borderRadius: const BorderRadius.all(
-                            const Radius.circular(10.0),
-                          ),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[300],
-                        labelText: "Buy Date"
-                    ),
-                    onChanged: (String text) {
-                      new_date = text;
-                    },
-                  ))),
-                new Expanded(child: new Padding(padding: EdgeInsets.all(10.0), child: new TextField(
-                    decoration: new InputDecoration(
-                        border: new OutlineInputBorder(
-                          borderRadius: const BorderRadius.all(
-                            const Radius.circular(10.0),
-                          ),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[300],
-                        labelText: "Broker"
-                    ),
-                    onChanged: (String text) {
-                      new_broker = text;
-                    },
-                  ))),
-                ],),),
-              actions: <Widget>[
-                new FlatButton(
-                  child: new Text("Cancel"),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                new FlatButton(
-                  child: new Text("Add"),
-                  onPressed: () {
-                    _saveSettings(new_ticker, new_buy.toString(), new_date, new_broker);
-                    print('Resetting new ticker data.');
-                    Navigator.pop(context);
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[300],
+                      labelText: "Ticker"
+                  ),
+                  onChanged: (String text) {
+                    new_ticker = text;
                   },
-                )
-              ],
-            )
+                ))),
+              new Expanded(child: new Padding(padding: EdgeInsets.all(10.0), child: new TextField(
+                  decoration: new InputDecoration(
+                      border: new OutlineInputBorder(
+                        borderRadius: const BorderRadius.all(
+                          const Radius.circular(10.0),
+                        ),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[300],
+                      labelText: "Buy Price"
+                  ),
+                  onChanged: (String text) {
+                    new_buy = double.parse(text);
+                  },
+                ))),
+              new Expanded(child: new Padding(padding: EdgeInsets.all(10.0), child: new TextField(
+                  decoration: new InputDecoration(
+                      border: new OutlineInputBorder(
+                        borderRadius: const BorderRadius.all(
+                          const Radius.circular(10.0),
+                        ),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[300],
+                      labelText: "Buy Date"
+                  ),
+                  onChanged: (String text) {
+                    new_date = text;
+                  },
+                ))),
+              new Expanded(child: new Padding(padding: EdgeInsets.all(10.0), child: new TextField(
+                  decoration: new InputDecoration(
+                      border: new OutlineInputBorder(
+                        borderRadius: const BorderRadius.all(
+                          const Radius.circular(10.0),
+                        ),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[300],
+                      labelText: "Broker"
+                  ),
+                  onChanged: (String text) {
+                    new_broker = text;
+                  },
+                ))),
+              ])),
+            actions: <Widget>[
+              new FlatButton(
+                child: new Text("Cancel"),
+                onPressed: () => Navigator.pop(context),
+              ),
+              new FlatButton(
+                child: new Text("Add"),
+                onPressed: () {
+                  _saveSettings(new_ticker, new_buy.toString(), new_date, new_broker);
+                  print('Resetting new ticker data.');
+                  Navigator.pop(context);
+                },
+              )
+            ],
+          )
         ),
       ),
       body: body,
