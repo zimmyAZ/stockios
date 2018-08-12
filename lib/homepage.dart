@@ -26,7 +26,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateMixin{
-  int _currentIndex = 0;
+  int _currentIndex = 1;
 
   bool _dataloaded = false;
 
@@ -424,11 +424,13 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
 
   void onTabTapped(int index) {
     if(index == 0){
-      print('Do Nothing.');
-    }
-    if(index == 1){
       Navigator.push(context, new MaterialPageRoute(
           builder: (context) => new BudgetPage()));
+    }
+    if(index == 1){
+      print('Do Nothing.');
+    }
+    if(index == 2){
       print('Do Nothing.');
     }
     setState(() {
@@ -442,16 +444,16 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
       currentIndex: _currentIndex, // new
       items: [
         new BottomNavigationBarItem(
-          icon: Icon(Icons.show_chart),
-          title: Text('Stocks'),
-        ),
-        new BottomNavigationBarItem(
           icon: Icon(Icons.credit_card),
           title: Text('Budget'),
         ),
         new BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            title: Text('Settings'),
+          icon: Icon(Icons.show_chart),
+          title: Text('Stocks'),
+        ),
+        new BottomNavigationBarItem(
+          icon: Icon(Icons.settings),
+          title: Text('Settings'),
         )
       ],
     );

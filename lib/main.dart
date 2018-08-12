@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'homepage.dart';
+import 'budgetpage.dart';
 
 void main() => runApp(App());
 
@@ -8,7 +9,7 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'My Flutter App',
-      home: MyHomePage(),
+      home: BudgetPage(),
     );
   }
 }
