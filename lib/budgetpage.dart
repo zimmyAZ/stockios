@@ -4,13 +4,18 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:async';
-import 'homepage.dart';
+import 'stockpage.dart';
+import 'recurringpage.dart';
 
 class expense_item {
   String _name;
   String _amount;
+  charts.Color _color;
 
-  expense_item(this._name, this._amount);
+  expense_item(this._name, this._amount, Color _color)
+      : this._color = new charts.Color(
+      r: _color.red, g: _color.green, b: _color.blue, a: _color.alpha);
+
 }
 
 class BudgetPage extends StatefulWidget {
@@ -79,7 +84,7 @@ class _MyBudgetState extends State<BudgetPage> {
   _create_table_object(){
     List<expense_item> temp_table_objects = [];
     for(var i = 0; i < expenses.length; i++){
-      temp_table_objects.add(new expense_item(expenses[i], amounts[i]));
+      temp_table_objects.add(new expense_item(expenses[i], amounts[i], Colors.green));
     }
     setState(() {
       table_objects = temp_table_objects;
@@ -95,8 +100,8 @@ class _MyBudgetState extends State<BudgetPage> {
   }
 
   Future _load_settings() async {
-    List<String> temp_expense;
-    List<String> temp_amounts;
+    List<String> temp_expense = [];
+    List<String> temp_amounts = [];
     String temp_monthly;
     String temp_yearly;
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -124,14 +129,15 @@ class _MyBudgetState extends State<BudgetPage> {
 
   void onTabTapped(int index) {
     if (index == 0) {
-      print('Do Nothing.');
+      print("nothing");
     }
     if (index == 1) {
       Navigator.push(context, new MaterialPageRoute(
-          builder: (context) => new MyHomePage()));
+          builder: (context) => new StockPage()));
     }
-    if (index == 3) {
-      print('Do Nothing.');
+    if (index == 2) {
+      Navigator.push(context, new MaterialPageRoute(
+          builder: (context) => new RecurringPage()));
     }
     setState(() {
       _currentIndex = index;
@@ -230,8 +236,8 @@ class _MyBudgetState extends State<BudgetPage> {
           title: Text('Stocks'),
         ),
         new BottomNavigationBarItem(
-          icon: Icon(Icons.settings),
-          title: Text('Settings'),
+          icon: Icon(Icons.refresh),
+          title: Text('Recurring'),
         )
       ],
     );
@@ -254,6 +260,20 @@ class _MyBudgetState extends State<BudgetPage> {
     _get_expense_table();
     _get_total_table();
     _create_charts();
+  }
+
+  _save_table_object() async {
+    List<String> temp_expenses = [];
+    List<String> temp_amounts = [];
+    for(int i = 0; i < table_objects.length; i++) {
+      temp_expenses.add(table_objects[i]._name);
+      temp_amounts.add(table_objects[i]._amount);
+    }
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs = await SharedPreferences.getInstance();
+
+    prefs.setStringList('expenses', temp_expenses);
+    prefs.setStringList('expense_amounts', temp_amounts);
   }
 
   _save_salary(String amount) async {
@@ -345,6 +365,8 @@ class _MyBudgetState extends State<BudgetPage> {
                 _get_total_table();
                 print('Resetting new expense data.');
                 _save_salary(monthly_salary);
+                _create_charts();
+                _save_table_object();
                 Navigator.pop(context);
               },
             )
@@ -406,7 +428,7 @@ class _MyBudgetState extends State<BudgetPage> {
           ],
         )
     );
-}
+  }
 
   _get_salary_table(){
     String temp_monthly_salary = (double.parse(salary) / 12).toStringAsFixed(2);;
@@ -514,6 +536,7 @@ class _MyBudgetState extends State<BudgetPage> {
         id: 'Spending Bar',
         domainFn: (expense_item clickData, _) => clickData._name,
         measureFn: (expense_item clickData, _) => double.parse(clickData._amount),
+        colorFn: (expense_item clickData, _) => clickData._color,
         data: table_objects,
       ),
     ];
@@ -521,8 +544,11 @@ class _MyBudgetState extends State<BudgetPage> {
     var chart_spending_bar = new charts.BarChart(
       spending_chart_data,
       animate: true,
-      defaultRenderer: new charts.BarRendererConfig(
-          cornerStrategy: const charts.ConstCornerStrategy(30)),
+      vertical: false,
+      barRendererDecorator: new charts.BarLabelDecorator<String>(),
+      domainAxis: new charts.OrdinalAxisSpec(renderSpec: new charts.NoneRenderSpec()),
+//      defaultRenderer: new charts.BarRendererConfig(
+//          cornerStrategy: const charts.ConstCornerStrategy(30)),
     );
 
     var chart_spending_pie = new charts.PieChart(
@@ -536,7 +562,7 @@ class _MyBudgetState extends State<BudgetPage> {
     setState((){
       print('Created investment bar chart.');
       chartWidget_spending_bar= new Padding(
-        padding: new EdgeInsets.all(32.0),
+        padding: new EdgeInsets.all(6.0),
         child: new SizedBox(
           height: 400.0,
           child: chart_spending_bar,

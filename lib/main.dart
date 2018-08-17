@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'homepage.dart';
+import 'stockpage.dart';
 import 'budgetpage.dart';
 
 void main() => runApp(App());
