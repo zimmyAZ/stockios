@@ -40,12 +40,12 @@ class _MyStockState extends State<StockPage> with SingleTickerProviderStateMixin
   String new_date;
   String new_broker;
 
-  List<String>ticker = [];
+  List<String>ticker = ['AAPL', 'MSFT', 'TSLA'];
   List<String>webtickers = [];
-  List<String>buying = [];
+  List<String>buying = ['200', '150', '300'];
   List<double>current = [];
-  List<String>dates = [];
-  List<String>brokers = [];
+  List<String>dates = ['7/7/17', '7/7/17', '7/7/17'];
+  List<String>brokers = ['Vanguard', 'Fidelity', 'RobinHood'];
 
   List compact = [];
   List temp_compact = [];
@@ -453,8 +453,8 @@ class _MyStockState extends State<StockPage> with SingleTickerProviderStateMixin
           title: Text('Stocks'),
         ),
         new BottomNavigationBarItem(
-          icon: Icon(Icons.settings),
-          title: Text('Settings'),
+          icon: Icon(Icons.refresh),
+          title: Text('Recurring'),
         )
       ],
     );

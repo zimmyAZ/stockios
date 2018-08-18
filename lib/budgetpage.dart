@@ -47,7 +47,7 @@ class _MyBudgetState extends State<BudgetPage> {
   List<DataRow> salary_rows = [];
 
   String salary = '10000.00';
-  String monthly_salary = '${(10000/12).toStringAsFixed(2)}';
+  String monthly_salary = '${(10000 / 12).toStringAsFixed(2)}';
   String total = '';
   String extra = '';
 
@@ -81,10 +81,11 @@ class _MyBudgetState extends State<BudgetPage> {
     ),
   ];
 
-  _create_table_object(){
+  _create_table_object() {
     List<expense_item> temp_table_objects = [];
-    for(var i = 0; i < expenses.length; i++){
-      temp_table_objects.add(new expense_item(expenses[i], amounts[i], Colors.green));
+    for (var i = 0; i < expenses.length; i++) {
+      temp_table_objects.add(
+          new expense_item(expenses[i], amounts[i], Colors.green));
     }
     setState(() {
       table_objects = temp_table_objects;
@@ -106,13 +107,13 @@ class _MyBudgetState extends State<BudgetPage> {
     String temp_yearly;
     SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs = await SharedPreferences.getInstance();
-    if((prefs.getStringList('expenses') != null)){
+    if ((prefs.getStringList('expenses') != null)) {
       temp_expense = prefs.getStringList('expenses');
       temp_amounts = prefs.getStringList('expense_amounts');
       temp_monthly = prefs.getString('monthly_salary');
       temp_yearly = ('${(double.parse(temp_monthly) * 12).toStringAsFixed(2)}');
     }
-    else{
+    else {
       temp_expense = expenses;
       temp_amounts = amounts;
       temp_monthly = monthly_salary;
@@ -265,7 +266,7 @@ class _MyBudgetState extends State<BudgetPage> {
   _save_table_object() async {
     List<String> temp_expenses = [];
     List<String> temp_amounts = [];
-    for(int i = 0; i < table_objects.length; i++) {
+    for (int i = 0; i < table_objects.length; i++) {
       temp_expenses.add(table_objects[i]._name);
       temp_amounts.add(table_objects[i]._amount);
     }
@@ -283,11 +284,11 @@ class _MyBudgetState extends State<BudgetPage> {
     prefs.setString('monthly_salary', monthly_salary);
   }
 
-  _delete_expense(int index) async{
+  _delete_expense(int index) async {
     List<String> temp_name_list = [];
     List<String> temp_amount_list = [];
 
-    for(var i = 0; i < table_objects.length; i++){
+    for (var i = 0; i < table_objects.length; i++) {
       temp_name_list.add(table_objects[i]._name);
       temp_amount_list.add(table_objects[i]._amount);
     }
@@ -309,7 +310,6 @@ class _MyBudgetState extends State<BudgetPage> {
     _get_expense_table();
     _get_total_table();
     _create_charts();
-
   }
 
   _expense_dialog(String name, int index) {
@@ -347,14 +347,16 @@ class _MyBudgetState extends State<BudgetPage> {
               ])),
           actions: <Widget>[
             new FlatButton(
-              child: new Text("Delete", style: new TextStyle(color: Colors.red)),
+              child: new Text(
+                  "Delete", style: new TextStyle(color: Colors.red)),
               onPressed: () {
                 _delete_expense(index);
                 Navigator.pop(context);
               },
             ),
             new FlatButton(
-              child: new Text("Cancel", style: new TextStyle(color: Colors.black54)),
+              child: new Text(
+                  "Cancel", style: new TextStyle(color: Colors.black54)),
               onPressed: () => Navigator.pop(context),
             ),
             new FlatButton(
@@ -417,7 +419,8 @@ class _MyBudgetState extends State<BudgetPage> {
               child: new Text("Change"),
               onPressed: () {
                 monthly_salary = new_salary;
-                salary = ('${(double.parse(new_salary) * 12).toStringAsFixed(2)}');
+                salary =
+                ('${(double.parse(new_salary) * 12).toStringAsFixed(2)}');
                 _get_salary_table();
                 _get_total_table();
                 print('Resetting new expense data.');
@@ -430,18 +433,21 @@ class _MyBudgetState extends State<BudgetPage> {
     );
   }
 
-  _get_salary_table(){
-    String temp_monthly_salary = (double.parse(salary) / 12).toStringAsFixed(2);;
+  _get_salary_table() {
+    String temp_monthly_salary = (double.parse(salary) / 12).toStringAsFixed(2);
+    ;
     List<DataRow> salaries = [];
     salaries.add(new DataRow(
         cells: [
-          new DataCell(new Text('\$${salary}', style: new TextStyle(color: Colors.green)),
+          new DataCell(new Text(
+              '\$${salary}', style: new TextStyle(color: Colors.green)),
               showEditIcon: false,
               onTap: () {
                 print('\$${salary}');
               }
           ),
-          new DataCell(new Text('\$${monthly_salary}', style: new TextStyle(color: Colors.green)),
+          new DataCell(new Text(
+              '\$${monthly_salary}', style: new TextStyle(color: Colors.green)),
               showEditIcon: true,
               onTap: () {
                 _salary_dialog();
@@ -456,7 +462,7 @@ class _MyBudgetState extends State<BudgetPage> {
     });
   }
 
-  _get_total_table(){
+  _get_total_table() {
     List<DataRow> rows_total = [];
     double temp_total = 0.0;
     double temp_extra = 0.0;
@@ -467,19 +473,21 @@ class _MyBudgetState extends State<BudgetPage> {
       print(temp_total);
     }
     temp_extra = (double.parse(monthly_salary) - temp_total);
-    setState((){
+    setState(() {
       total = temp_total.toStringAsFixed(2);
       extra = temp_extra.toStringAsFixed(2);
     });
     rows_total.add(new DataRow(
         cells: [
-          new DataCell(new Text('\$${extra}', style: new TextStyle(color: Colors.green)),
+          new DataCell(
+              new Text('\$${extra}', style: new TextStyle(color: Colors.green)),
               showEditIcon: false,
               onTap: () {
                 print('${extra}');
               }
           ),
-          new DataCell(new Text('-\$${total}', style: new TextStyle(color: Colors.red)),
+          new DataCell(
+              new Text('-\$${total}', style: new TextStyle(color: Colors.red)),
               showEditIcon: false,
               onTap: () {
                 print('\$${total}');
@@ -487,17 +495,17 @@ class _MyBudgetState extends State<BudgetPage> {
           ),
         ]
     ));
-    setState((){
+    setState(() {
       total_rows = rows_total;
     });
   }
 
   _get_expense_table() {
-
 //    SORT OBJECT
     List<expense_item> sorted_objects = table_objects;
     setState(() {
-      sorted_objects.sort((a, b) => double.parse(a._amount).compareTo(double.parse(b._amount)));
+      sorted_objects.sort((a, b) =>
+          double.parse(a._amount).compareTo(double.parse(b._amount)));
 //    Inverse List
       table_objects = sorted_objects.reversed.toList();
     });
@@ -512,20 +520,23 @@ class _MyBudgetState extends State<BudgetPage> {
                 showEditIcon: false,
                 onTap: () {
                   _expense_dialog(table_objects[i]._name, i);
-                  print('${table_objects[i]._name}, ${table_objects[i]._amount}, ${i}');
+                  print('${table_objects[i]._name}, ${table_objects[i]
+                      ._amount}, ${i}');
                 }
             ),
-            new DataCell(new Text('-\$${table_objects[i]._amount}', style: new TextStyle(color: Colors.red)),
+            new DataCell(new Text('-\$${table_objects[i]._amount}',
+                style: new TextStyle(color: Colors.red)),
                 showEditIcon: false,
                 onTap: () {
                   _expense_dialog(table_objects[i]._name, i);
-                  print('${table_objects[i]._name}, ${table_objects[i]._amount}, ${i}');
+                  print('${table_objects[i]._name}, ${table_objects[i]
+                      ._amount}, ${i}');
                 }
             ),
           ]
       ));
     }
-    setState((){
+    setState(() {
       expense_rows = rows;
     });
   }
@@ -535,7 +546,8 @@ class _MyBudgetState extends State<BudgetPage> {
       new charts.Series(
         id: 'Spending Bar',
         domainFn: (expense_item clickData, _) => clickData._name,
-        measureFn: (expense_item clickData, _) => double.parse(clickData._amount),
+        measureFn: (expense_item clickData, _) =>
+            double.parse(clickData._amount),
         colorFn: (expense_item clickData, _) => clickData._color,
         data: table_objects,
       ),
@@ -546,7 +558,8 @@ class _MyBudgetState extends State<BudgetPage> {
       animate: true,
       vertical: false,
       barRendererDecorator: new charts.BarLabelDecorator<String>(),
-      domainAxis: new charts.OrdinalAxisSpec(renderSpec: new charts.NoneRenderSpec()),
+      domainAxis: new charts.OrdinalAxisSpec(
+          renderSpec: new charts.NoneRenderSpec()),
 //      defaultRenderer: new charts.BarRendererConfig(
 //          cornerStrategy: const charts.ConstCornerStrategy(30)),
     );
@@ -559,9 +572,9 @@ class _MyBudgetState extends State<BudgetPage> {
             arcRendererDecorators: [new charts.ArcLabelDecorator()])
     );
 
-    setState((){
+    setState(() {
       print('Created investment bar chart.');
-      chartWidget_spending_bar= new Padding(
+      chartWidget_spending_bar = new Padding(
         padding: new EdgeInsets.all(6.0),
         child: new SizedBox(
           height: 400.0,
@@ -651,11 +664,11 @@ class _MyBudgetState extends State<BudgetPage> {
 //    }
 //  }
 
-  _load() async{
+  _load() async {
     print('Loading data.');
     await _load_settings();
-    while(true){
-      if(load_done_1 == true){
+    while (true) {
+      if (load_done_1 == true) {
         break;
       }
     }
@@ -723,7 +736,10 @@ class _MyBudgetState extends State<BudgetPage> {
     );
 
     final body = Container(
-      width: MediaQuery.of(context).size.width,
+      width: MediaQuery
+          .of(context)
+          .size
+          .width,
       padding: EdgeInsets.all(4.0),
       decoration: BoxDecoration(
         gradient: LinearGradient(colors: [
@@ -733,7 +749,13 @@ class _MyBudgetState extends State<BudgetPage> {
       ),
       child: ListView(
         scrollDirection: Axis.vertical,
-        children: <Widget>[salaries_card, expense_card, total_card, spending_bar_card, spending_pie_card],
+        children: <Widget>[
+          salaries_card,
+          expense_card,
+          total_card,
+          spending_bar_card,
+          spending_pie_card
+        ],
       ),
     );
 
@@ -744,5 +766,4 @@ class _MyBudgetState extends State<BudgetPage> {
       body: body,
     );
   }
-
 }
